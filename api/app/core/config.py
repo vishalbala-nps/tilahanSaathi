@@ -12,5 +12,9 @@ class Settings(BaseSettings):
 
     firebase_credentials_path: str = "secrets/firebase-service-account.json"
 
+    llm_model: str = "ollama_chat/gemma4"
+    llm_temperature: float = 0.2
+    llm_timeout_seconds: int = 90  # local Ollama models can take ~60s; cloud providers are much faster
+
 
 settings = Settings()

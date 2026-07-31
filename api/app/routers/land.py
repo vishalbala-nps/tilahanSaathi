@@ -7,6 +7,8 @@ from app.db.session import get_db
 from app.models.land import Land
 from app.models.user import User
 from app.schemas.land import LandCreate, LandRead
+from app.schemas.recommendation import CropRecommendationResponse
+from app.services import crop_recommendation as crop_recommendation_service
 
 router = APIRouter(prefix="/lands", tags=["lands"])
 
@@ -59,3 +61,13 @@ async def delete_land(
     land = await _get_owned_land(land_id, current_user.id, db)
     await db.delete(land)
     await db.commit()
+
+
+@router.post("/{land_id}/recommendations", response_model=CropRecommendationResponse)
+async def recommend_crops(
+    land_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> CropRecommendationResponse:
+    land = await _get_owned_land(land_id, current_user.id, db)
+    return await crop_recommendation_service.generate_recommendation(land)
