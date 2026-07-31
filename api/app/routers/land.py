@@ -1,0 +1,61 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_current_user
+from app.db.session import get_db
+from app.models.land import Land
+from app.models.user import User
+from app.schemas.land import LandCreate, LandRead
+
+router = APIRouter(prefix="/lands", tags=["lands"])
+
+
+@router.post("", response_model=LandRead, status_code=status.HTTP_201_CREATED)
+async def create_land(
+    body: LandCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Land:
+    land = Land(user_id=current_user.id, **body.model_dump())
+    db.add(land)
+    await db.commit()
+    await db.refresh(land)
+    return land
+
+
+@router.get("", response_model=list[LandRead])
+async def list_lands(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[Land]:
+    result = await db.execute(select(Land).where(Land.user_id == current_user.id))
+    return list(result.scalars().all())
+
+
+async def _get_owned_land(land_id: int, user_id: str, db: AsyncSession) -> Land:
+    result = await db.execute(select(Land).where(Land.id == land_id, Land.user_id == user_id))
+    land = result.scalar_one_or_none()
+    if land is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Land not found")
+    return land
+
+
+@router.get("/{land_id}", response_model=LandRead)
+async def get_land(
+    land_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Land:
+    return await _get_owned_land(land_id, current_user.id, db)
+
+
+@router.delete("/{land_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_land(
+    land_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    land = await _get_owned_land(land_id, current_user.id, db)
+    await db.delete(land)
+    await db.commit()

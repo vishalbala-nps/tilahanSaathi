@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth
+from app.routers import land
 from app.routers import user
 
 app = FastAPI(title="Tilahan Saathi API")
@@ -17,3 +18,4 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(user.router)
+app.include_router(land.router)
