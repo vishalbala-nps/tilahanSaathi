@@ -54,3 +54,30 @@ class EvaluationFactor(str, enum.Enum):
     CROP_ROTATION = "crop_rotation"
     DATA_AVAILABILITY = "data_availability"
     OTHER = "other"
+
+
+class ActivityCategory(str, enum.Enum):
+    CROP_ESTABLISHMENT = "crop_establishment"
+    FIELD_MONITORING = "field_monitoring"
+    NUTRIENT_MANAGEMENT = "nutrient_management"
+    IRRIGATION = "irrigation"
+    WEED_MANAGEMENT = "weed_management"
+    CROP_MONITORING = "crop_monitoring"
+    PEST_MONITORING = "pest_monitoring"
+    HARVEST_PREPARATION = "harvest_preparation"
+    HARVEST = "harvest"
+    POST_HARVEST = "post_harvest"
+
+
+class ActivityPriority(str, enum.Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class ActivityStatus(str, enum.Enum):
+    UPCOMING = "upcoming"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    OVERDUE = "overdue"

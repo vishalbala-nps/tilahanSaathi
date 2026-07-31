@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
+from app.models.land import Land
 from app.models.user import User
 
 _bearer_scheme = HTTPBearer()
@@ -32,3 +33,11 @@ async def get_current_user(
         raise credentials_error
 
     return user
+
+
+async def get_owned_land(land_id: int, user_id: str, db: AsyncSession) -> Land:
+    result = await db.execute(select(Land).where(Land.id == land_id, Land.user_id == user_id))
+    land = result.scalar_one_or_none()
+    if land is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Land not found")
+    return land
