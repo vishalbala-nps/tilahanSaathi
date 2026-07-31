@@ -21,12 +21,12 @@ async def login(body: FirebaseLoginRequest, db: AsyncSession = Depends(get_db)) 
     except firebase_auth.ExpiredIdTokenError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Expired Firebase ID token") from exc
 
-    result = await db.execute(select(User).where(User.firebase_uid == firebase_user.uid))
+    result = await db.execute(select(User).where(User.id == firebase_user.uid))
     user = result.scalar_one_or_none()
 
     if user is None:
         user = User(
-            firebase_uid=firebase_user.uid,
+            id=firebase_user.uid,
             email=firebase_user.email,
             display_name=firebase_user.name,
         )
