@@ -14,4 +14,8 @@ class LandsRepository {
     final response = await dio.post<Map<String, dynamic>>('/lands', data: payload);
     return Land.fromJson(response.data!);
   }
+
+  Future<void> deleteLand(int id) async {
+    await dio.delete<void>('/lands/$id');
+  }
 }

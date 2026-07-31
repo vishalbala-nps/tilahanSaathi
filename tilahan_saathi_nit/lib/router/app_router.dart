@@ -7,6 +7,7 @@ import 'package:tilahan_saathi/features/auth/signup_screen.dart';
 import 'package:tilahan_saathi/features/crop_details/crop_details_screen.dart';
 import 'package:tilahan_saathi/features/home/main_shell.dart';
 import 'package:tilahan_saathi/features/lands/all_lands_screen.dart';
+import 'package:tilahan_saathi/features/lands/land_details_screen.dart';
 import 'package:tilahan_saathi/features/oilseeds/add_oilseed_screen.dart';
 import 'package:tilahan_saathi/features/oilseeds/oilseed_calendar_screen.dart';
 import 'package:tilahan_saathi/features/oilseeds/suggest_oilseed_screen.dart';
@@ -15,6 +16,7 @@ import 'package:tilahan_saathi/features/recommendations/crop_recommendations_scr
 import 'package:tilahan_saathi/features/splash/splash_screen.dart';
 import 'package:tilahan_saathi/features/welcome/welcome_screen.dart';
 import 'package:tilahan_saathi/models/enums.dart';
+import 'package:tilahan_saathi/models/land.dart';
 
 abstract final class AppRoutes {
   static const splash = '/splash';
@@ -27,6 +29,7 @@ abstract final class AppRoutes {
   static const cropDetails = '/crop-details';
   static const profitability = '/profitability';
   static const allLands = '/lands';
+  static const landDetails = '/land-details';
   static const addOilseed = '/add-oilseed';
   static const suggestOilseed = '/suggest-oilseed';
   static const oilseedCalendar = '/oilseed-calendar';
@@ -86,6 +89,10 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.allLands,
         builder: (context, state) => const AllLandsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.landDetails,
+        builder: (context, state) => LandDetailsScreen(land: state.extra as Land),
       ),
       GoRoute(
         path: AppRoutes.addOilseed,

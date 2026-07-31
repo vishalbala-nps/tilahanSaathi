@@ -23,7 +23,16 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Tilahan Saathi')),
+      appBar: AppBar(
+        title: const Text('Tilahan Saathi'),
+        actions: [
+          if (landAsync.value != null)
+            TextButton(
+              onPressed: () => context.push(AppRoutes.allLands),
+              child: const Text('All Lands'),
+            ),
+        ],
+      ),
       body: SafeArea(
         child: landAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -133,53 +142,35 @@ class _CurrentLandCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      onTap: () => context.push(AppRoutes.landDetails, extra: land),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: AppColors.earthBrown.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(Icons.landscape_rounded, color: AppColors.earthBrown, size: 32),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      land.name,
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      land.farmLocation,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.push(AppRoutes.allLands),
-                child: const Text('All Lands'),
-              ),
-            ],
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.earthBrown.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.landscape_rounded, color: AppColors.earthBrown, size: 32),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _InfoChip(label: '${land.areaAcres.toStringAsFixed(1)} acres'),
-              _InfoChip(label: land.soilType.label),
-              _InfoChip(label: land.waterAvailability.label),
-              _InfoChip(label: land.plantingSeason.label),
-            ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  land.name,
+                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  land.farmLocation,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
           ),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
         ],
       ),
     );
@@ -235,30 +226,6 @@ class _OilseedCard extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
-}
-
-class _InfoChip extends StatelessWidget {
-  const _InfoChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    );
-  }
 }
 
 class _NoLandsState extends ConsumerWidget {

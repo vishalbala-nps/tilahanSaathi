@@ -12,11 +12,52 @@ import 'package:tilahan_saathi/providers/lands_provider.dart';
 import 'package:tilahan_saathi/providers/selected_land_provider.dart';
 import 'package:tilahan_saathi/router/app_router.dart';
 
-class AllLandsScreen extends ConsumerWidget {
+class AllLandsScreen extends ConsumerStatefulWidget {
   const AllLandsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AllLandsScreen> createState() => _AllLandsScreenState();
+}
+
+class _AllLandsScreenState extends ConsumerState<AllLandsScreen> {
+  Future<void> _confirmDelete(Land land) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete this land?'),
+        content: Text(
+          'This will permanently remove "${land.name}" and everything grown on it. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => context.pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => context.pop(true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(landsRepositoryProvider).deleteLand(land.id);
+      ref.invalidate(landsListProvider);
+      if (ref.read(selectedLandIdProvider) == land.id) {
+        ref.read(selectedLandIdProvider.notifier).state = null;
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyErrorMessage(error))),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final landsAsync = ref.watch(landsListProvider);
     final selectedId = ref.watch(selectedLandIdProvider);
 
@@ -58,6 +99,8 @@ class AllLandsScreen extends ConsumerWidget {
                                 ref.read(selectedLandIdProvider.notifier).state = land.id;
                                 context.pop();
                               },
+                              onDetails: () => context.push(AppRoutes.landDetails, extra: land),
+                              onDelete: () => _confirmDelete(land),
                             );
                           },
                         ),
@@ -81,11 +124,19 @@ class AllLandsScreen extends ConsumerWidget {
 }
 
 class _LandTile extends StatelessWidget {
-  const _LandTile({required this.land, required this.isSelected, required this.onTap});
+  const _LandTile({
+    required this.land,
+    required this.isSelected,
+    required this.onTap,
+    required this.onDetails,
+    required this.onDelete,
+  });
 
   final Land land;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback onDetails;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -121,10 +172,16 @@ class _LandTile extends StatelessWidget {
               ],
             ),
           ),
-          if (isSelected)
-            const Icon(Icons.check_circle_rounded, color: AppColors.primary)
-          else
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+          IconButton(
+            icon: const Icon(Icons.info_outline_rounded, color: AppColors.textSecondary),
+            tooltip: 'Details',
+            onPressed: onDetails,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+            tooltip: 'Delete',
+            onPressed: onDelete,
+          ),
         ],
       ),
     );

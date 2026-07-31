@@ -38,7 +38,7 @@ class _AddOilseedScreenState extends ConsumerState<AddOilseedScreen> {
       context: context,
       initialDate: _sowingDate,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) setState(() => _sowingDate = picked);
   }
