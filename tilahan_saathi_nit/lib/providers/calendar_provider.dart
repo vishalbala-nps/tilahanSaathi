@@ -6,7 +6,9 @@ final calendarRepositoryProvider = Provider<CalendarRepository>((ref) => Calenda
 
 typedef CalendarKey = ({int landId, int oilseedId});
 
-class CalendarNotifier extends FamilyAsyncNotifier<OilseedCalendar, CalendarKey> {
+// autoDispose: see landsListProvider for why — avoids an eager, unauthenticated
+// refetch (and the resulting unhandled exception) when the session resets.
+class CalendarNotifier extends AutoDisposeFamilyAsyncNotifier<OilseedCalendar, CalendarKey> {
   @override
   Future<OilseedCalendar> build(CalendarKey arg) {
     return ref.read(calendarRepositoryProvider).getOrCreateCalendar(arg.landId, arg.oilseedId);
@@ -26,6 +28,6 @@ class CalendarNotifier extends FamilyAsyncNotifier<OilseedCalendar, CalendarKey>
 }
 
 final calendarProvider =
-    AsyncNotifierProvider.family<CalendarNotifier, OilseedCalendar, CalendarKey>(
+    AsyncNotifierProvider.autoDispose.family<CalendarNotifier, OilseedCalendar, CalendarKey>(
   CalendarNotifier.new,
 );

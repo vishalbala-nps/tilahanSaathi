@@ -4,12 +4,16 @@ import 'package:tilahan_saathi/providers/lands_provider.dart';
 
 /// The id of the land the farmer is currently viewing. `null` means "no
 /// explicit pick yet" — defer to the first land in the list.
-final selectedLandIdProvider = StateProvider<int?>((ref) => null);
+///
+/// autoDispose to match [landsListProvider], which it depends on transitively
+/// via [selectedLandProvider] — a non-autoDispose provider can't safely watch
+/// an autoDispose one.
+final selectedLandIdProvider = StateProvider.autoDispose<int?>((ref) => null);
 
 /// The land to actually show as "current" — resolves [selectedLandIdProvider]
 /// against the live lands list, falling back to the first land, or `null`
 /// if the farmer has no lands at all.
-final selectedLandProvider = Provider<AsyncValue<Land?>>((ref) {
+final selectedLandProvider = Provider.autoDispose<AsyncValue<Land?>>((ref) {
   final landsAsync = ref.watch(landsListProvider);
   return landsAsync.whenData((lands) {
     if (lands.isEmpty) return null;

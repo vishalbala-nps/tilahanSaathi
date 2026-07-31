@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tilahan_saathi/core/theme/app_colors.dart';
 import 'package:tilahan_saathi/core/widgets/app_card.dart';
 import 'package:tilahan_saathi/providers/auth_provider.dart';
-import 'package:tilahan_saathi/providers/farm_profile_provider.dart';
+import 'package:tilahan_saathi/providers/session_reset.dart';
 import 'package:tilahan_saathi/router/app_router.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -65,7 +65,7 @@ class ProfileScreen extends ConsumerWidget {
                 // whether the Firebase call itself succeeds — always proceed
                 // to the login screen either way.
               }
-              ref.read(farmProfileProvider.notifier).reset();
+              resetUserSession(ref);
               if (context.mounted) context.go(AppRoutes.login);
             },
           ),

@@ -27,6 +27,7 @@ String friendlyErrorMessage(Object error) {
     }
   }
   if (error is DioException) {
+    print(error);
     return 'Could not reach the server. Please try again.';
   }
   return 'Something went wrong. Please try again.';

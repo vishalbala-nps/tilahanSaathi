@@ -4,6 +4,8 @@ import 'package:tilahan_saathi/models/oilseed.dart';
 
 final oilseedsRepositoryProvider = Provider<OilseedsRepository>((ref) => OilseedsRepository());
 
-final oilseedsForLandProvider = FutureProvider.family<List<Oilseed>, int>(
+// autoDispose: see landsListProvider for why — avoids an eager, unauthenticated
+// refetch (and the resulting unhandled exception) when the session resets.
+final oilseedsForLandProvider = FutureProvider.autoDispose.family<List<Oilseed>, int>(
   (ref, landId) => ref.read(oilseedsRepositoryProvider).listOilseeds(landId),
 );
