@@ -81,3 +81,9 @@ class ActivityStatus(str, enum.Enum):
     ACTIVE = "active"
     COMPLETED = "completed"
     OVERDUE = "overdue"
+
+
+class SchemeRelevance(str, enum.Enum):
+    RELEVANT = "relevant"
+    NOT_RELEVANT = "not_relevant"
+    INSUFFICIENT_DATA = "insufficient_data"
