@@ -8,7 +8,7 @@ import 'package:tilahan_saathi/router/app_router.dart';
 /// or auto-login: onboarding if they have no land registered yet, otherwise
 /// straight to the home dashboard.
 Future<void> navigateAfterLogin(BuildContext context, WidgetRef ref) async {
-  final lands = await ref.read(landsRepositoryProvider).getLands();
+  final lands = await ref.read(landsListProvider.future);
   if (!context.mounted) return;
   context.go(lands.isEmpty ? AppRoutes.welcome : AppRoutes.home);
 }

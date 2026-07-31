@@ -6,10 +6,15 @@ import 'package:tilahan_saathi/features/auth/login_screen.dart';
 import 'package:tilahan_saathi/features/auth/signup_screen.dart';
 import 'package:tilahan_saathi/features/crop_details/crop_details_screen.dart';
 import 'package:tilahan_saathi/features/home/main_shell.dart';
+import 'package:tilahan_saathi/features/lands/all_lands_screen.dart';
+import 'package:tilahan_saathi/features/oilseeds/add_oilseed_screen.dart';
+import 'package:tilahan_saathi/features/oilseeds/oilseed_calendar_screen.dart';
+import 'package:tilahan_saathi/features/oilseeds/suggest_oilseed_screen.dart';
 import 'package:tilahan_saathi/features/onboarding/farm_setup_screen.dart';
 import 'package:tilahan_saathi/features/recommendations/crop_recommendations_screen.dart';
 import 'package:tilahan_saathi/features/splash/splash_screen.dart';
 import 'package:tilahan_saathi/features/welcome/welcome_screen.dart';
+import 'package:tilahan_saathi/models/enums.dart';
 
 abstract final class AppRoutes {
   static const splash = '/splash';
@@ -21,6 +26,10 @@ abstract final class AppRoutes {
   static const recommendations = '/recommendations';
   static const cropDetails = '/crop-details';
   static const profitability = '/profitability';
+  static const allLands = '/lands';
+  static const addOilseed = '/add-oilseed';
+  static const suggestOilseed = '/suggest-oilseed';
+  static const oilseedCalendar = '/oilseed-calendar';
   static const home = '/home';
   static const myCrop = '/my-crop';
   static const market = '/market';
@@ -73,6 +82,27 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.profitability,
         builder: (context, state) => const SizedBox.shrink(),
+      ),
+      GoRoute(
+        path: AppRoutes.allLands,
+        builder: (context, state) => const AllLandsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.addOilseed,
+        builder: (context, state) =>
+            AddOilseedScreen(preselectedCrop: state.extra as OilseedCrop?),
+      ),
+      GoRoute(
+        path: AppRoutes.suggestOilseed,
+        builder: (context, state) => const SuggestOilseedScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.oilseedCalendar,
+        builder: (context, state) {
+          final landId = int.parse(state.uri.queryParameters['landId']!);
+          final oilseedId = int.parse(state.uri.queryParameters['oilseedId']!);
+          return OilseedCalendarScreen(landId: landId, oilseedId: oilseedId);
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

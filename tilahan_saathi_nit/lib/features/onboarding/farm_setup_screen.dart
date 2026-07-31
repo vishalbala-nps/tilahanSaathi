@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tilahan_saathi/core/network/error_message.dart';
 import 'package:tilahan_saathi/core/theme/app_colors.dart';
@@ -10,6 +8,7 @@ import 'package:tilahan_saathi/data/mock/india_locations.dart';
 import 'package:tilahan_saathi/models/farm_profile.dart';
 import 'package:tilahan_saathi/providers/farm_profile_provider.dart';
 import 'package:tilahan_saathi/providers/lands_provider.dart';
+import 'package:tilahan_saathi/providers/selected_land_provider.dart';
 import 'package:tilahan_saathi/router/app_router.dart';
 
 class FarmSetupScreen extends ConsumerStatefulWidget {
@@ -21,7 +20,7 @@ class FarmSetupScreen extends ConsumerStatefulWidget {
 
 class _FarmSetupScreenState extends ConsumerState<FarmSetupScreen> {
   static const _stepLabels = [
-    'Farm name',
+    'Land name',
     'Select your state',
     'Select your district',
     'Land area',
@@ -46,6 +45,8 @@ class _FarmSetupScreenState extends ConsumerState<FarmSetupScreen> {
   void _back() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
+    } else if (context.canPop()) {
+      context.pop();
     } else {
       context.go(AppRoutes.welcome);
     }
@@ -60,7 +61,7 @@ class _FarmSetupScreenState extends ConsumerState<FarmSetupScreen> {
     });
 
     try {
-      await ref.read(landsRepositoryProvider).createLand({
+      final land = await ref.read(landsRepositoryProvider).createLand({
         'name': profile.landName,
         'farm_location': '${profile.district}, ${profile.state}',
         'area_acres': profile.landAreaAcres,
@@ -69,7 +70,15 @@ class _FarmSetupScreenState extends ConsumerState<FarmSetupScreen> {
         'last_grown_crop': profile.currentCrop,
         'planting_season': LandApiMapping.plantingSeason[profile.planningSeason],
       });
-      if (mounted) context.go(AppRoutes.home);
+      ref.invalidate(landsListProvider);
+      ref.read(selectedLandIdProvider.notifier).state = land.id;
+      if (mounted) {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(AppRoutes.home);
+        }
+      }
     } catch (error) {
       if (mounted) setState(() => _errorMessage = friendlyErrorMessage(error));
     } finally {
@@ -114,7 +123,7 @@ class _FarmSetupScreenState extends ConsumerState<FarmSetupScreen> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: _back,
         ),
-        title: const Text('Farm Setup'),
+        title: const Text('Land Setup'),
       ),
       body: SafeArea(
         child: Padding(
@@ -157,9 +166,9 @@ class _FarmSetupScreenState extends ConsumerState<FarmSetupScreen> {
   Widget _buildStepContent(ThemeData theme, FarmProfile profile) {
     return switch (_currentStep) {
       0 => _TextEntryStep(
-          title: 'What would you like to name this farm?',
+          title: 'What would you like to name this land?',
           subtitle: 'e.g. "Home Field" or "North Plot"',
-          hintText: 'Farm name',
+          hintText: 'Land name',
           initialValue: profile.landName ?? '',
           onChanged: (v) => ref.read(farmProfileProvider.notifier).setLandName(v),
         ),
@@ -298,14 +307,12 @@ class _StateLocationStep extends StatefulWidget {
 class _StateLocationStepState extends State<_StateLocationStep> {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: _SearchableListStep(
-            title: 'Which state is your farm in?',
+            title: 'Which state is your land in?',
             items: IndiaLocations.states,
             selected: widget.selected,
             onSelected: widget.onSelected,
@@ -566,9 +573,16 @@ class _ChipSelectionStep extends StatelessWidget {
               selected: isSelected,
               onSelected: (_) => onSelected(option),
               showCheckmark: true,
-              avatar: isSelected
-                  ? null
-                  : Icon(Icons.circle_outlined, size: 18, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+              backgroundColor: AppColors.surface,
+              selectedColor: AppColors.primary,
+              checkmarkColor: Colors.white,
+              labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+              side: BorderSide(
+                color: isSelected ? AppColors.primary : AppColors.primary.withValues(alpha: 0.25),
+              ),
             );
           }).toList(),
         ),

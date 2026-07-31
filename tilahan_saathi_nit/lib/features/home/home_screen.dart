@@ -1,265 +1,303 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:tilahan_saathi/core/network/error_message.dart';
 import 'package:tilahan_saathi/core/theme/app_colors.dart';
 import 'package:tilahan_saathi/core/widgets/app_card.dart';
+import 'package:tilahan_saathi/core/widgets/async_error_view.dart';
+import 'package:tilahan_saathi/core/widgets/primary_button.dart';
+import 'package:tilahan_saathi/models/land.dart';
+import 'package:tilahan_saathi/models/oilseed.dart';
 import 'package:tilahan_saathi/providers/farm_profile_provider.dart';
+import 'package:tilahan_saathi/providers/lands_provider.dart';
+import 'package:tilahan_saathi/providers/oilseeds_provider.dart';
+import 'package:tilahan_saathi/providers/selected_land_provider.dart';
+import 'package:tilahan_saathi/router/app_router.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(farmProfileProvider);
-    final theme = Theme.of(context);
+    final landAsync = ref.watch(selectedLandProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Namaste, Kisan!',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            if (profile.district != null)
-              Text(
-                '${profile.district}, ${profile.state}',
-                style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+      appBar: AppBar(title: const Text('Tilahan Saathi')),
+      body: SafeArea(
+        child: landAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => AsyncErrorView(
+            message: friendlyErrorMessage(error),
+            onRetry: () => ref.invalidate(landsListProvider),
           ),
-        ],
+          data: (land) {
+            if (land == null) return const _NoLandsState();
+            return _HomeContent(land: land);
+          },
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(Icons.eco_rounded, color: AppColors.primary),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Current Crop',
-                            style: theme.textTheme.labelMedium?.copyWith(
+    );
+  }
+}
+
+class _HomeContent extends ConsumerWidget {
+  const _HomeContent({required this.land});
+
+  final Land land;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final oilseedsAsync = ref.watch(oilseedsForLandProvider(land.id));
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _CurrentLandCard(land: land),
+        const SizedBox(height: 24),
+        Text(
+          'Oilseeds Planted',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        oilseedsAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (error, _) => AsyncErrorView(
+            message: friendlyErrorMessage(error),
+            onRetry: () => ref.invalidate(oilseedsForLandProvider(land.id)),
+          ),
+          data: (oilseeds) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (oilseeds.isEmpty)
+                AppCard(
+                  child: Column(
+                    children: [
+                      Icon(Icons.grass_rounded, size: 40, color: AppColors.primary.withValues(alpha: 0.6)),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No oilseeds planted on this land yet',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: AppColors.textSecondary,
                             ),
-                          ),
-                          Text(
-                            profile.currentCrop ?? 'Groundnut',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Growth stage: Flowering',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: 0.55,
-                    minHeight: 8,
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          AppCard(
-            color: AppColors.accent.withValues(alpha: 0.15),
-            child: Row(
-              children: [
-                const Icon(Icons.lightbulb_rounded, color: AppColors.earthBrown, size: 32),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Today's Advisory",
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.earthBrown,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Apply micronutrients this week. Avoid irrigation before expected rain.',
-                        style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
                       ),
                     ],
                   ),
+                )
+              else
+                ...oilseeds.map(
+                  (oilseed) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _OilseedCard(landId: land.id, oilseed: oilseed),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Add Oilseed'),
+                onPressed: () => context.push(AppRoutes.addOilseed),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: PrimaryButton(
+                label: 'Suggest Oilseed',
+                icon: Icons.auto_awesome,
+                onPressed: () => context.push(AppRoutes.suggestOilseed),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CurrentLandCard extends StatelessWidget {
+  const _CurrentLandCard({required this.land});
+
+  final Land land;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.earthBrown.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.landscape_rounded, color: AppColors.earthBrown, size: 32),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      land.name,
+                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      land.farmLocation,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push(AppRoutes.allLands),
+                child: const Text('All Lands'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _InfoChip(label: '${land.areaAcres.toStringAsFixed(1)} acres'),
+              _InfoChip(label: land.soilType.label),
+              _InfoChip(label: land.waterAvailability.label),
+              _InfoChip(label: land.plantingSeason.label),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OilseedCard extends StatelessWidget {
+  const _OilseedCard({required this.landId, required this.oilseed});
+
+  final int landId;
+  final Oilseed oilseed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final crop = oilseed.crop;
+
+    return AppCard(
+      onTap: () => context.push(
+        '${AppRoutes.oilseedCalendar}?landId=$landId&oilseedId=${oilseed.id}',
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: crop.color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(crop.icon, color: crop.color, size: 26),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  crop.label,
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  'Sown ${_formatDate(oilseed.sowingDate)}',
+                  style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          const Row(
-            children: [
-              Expanded(
-                child: _QuickStatCard(
-                  icon: Icons.wb_sunny_rounded,
-                  label: '32°C',
-                  subtitle: 'Partly cloudy',
-                  color: AppColors.skyBlue,
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: _QuickStatCard(
-                  icon: Icons.water_drop_rounded,
-                  label: '60%',
-                  subtitle: 'Humidity',
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Upcoming Tasks',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          const _TaskTile(title: 'Pest inspection', date: 'Tomorrow', icon: Icons.bug_report_outlined),
-          const _TaskTile(title: 'Light irrigation', date: 'In 3 days', icon: Icons.water_outlined),
-          const _TaskTile(title: 'Fertilizer top-dress', date: 'In 5 days', icon: Icons.grass_rounded),
-          const SizedBox(height: 24),
-          Text(
-            'Quick Actions',
-            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          const Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _ActionChip(icon: Icons.calendar_month_rounded, label: 'Calendar'),
-              _ActionChip(icon: Icons.health_and_safety_outlined, label: 'Crop Health'),
-              _ActionChip(icon: Icons.cloud_outlined, label: 'Weather'),
-              _ActionChip(icon: Icons.auto_awesome, label: 'Ask AI'),
-            ],
-          ),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
         ],
       ),
     );
   }
+
+  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 }
 
-class _QuickStatCard extends StatelessWidget {
-  const _QuickStatCard({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.color,
-  });
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.label});
 
-  final IconData icon;
   final String label;
-  final String subtitle;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            subtitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-          ),
-        ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }
 }
 
-class _TaskTile extends StatelessWidget {
-  const _TaskTile({
-    required this.title,
-    required this.date,
-    required this.icon,
-  });
-
-  final String title;
-  final String date;
-  final IconData icon;
+class _NoLandsState extends ConsumerWidget {
+  const _NoLandsState();
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: AppCard(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.primary),
-            const SizedBox(width: 16),
-            Expanded(child: Text(title, style: Theme.of(context).textTheme.bodyLarge)),
-            Text(
-              date,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-          ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: AppCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.landscape_rounded, size: 56, color: AppColors.primary.withValues(alpha: 0.6)),
+              const SizedBox(height: 16),
+              Text(
+                'No Land Added Yet',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add your farm to get crop recommendations and calendars.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              PrimaryButton(
+                label: 'Add Land',
+                icon: Icons.add_rounded,
+                onPressed: () {
+                  ref.read(farmProfileProvider.notifier).reset();
+                  context.push(AppRoutes.farmSetup);
+                },
+              ),
+            ],
+          ),
         ),
       ),
-    );
-  }
-}
-
-class _ActionChip extends StatelessWidget {
-  const _ActionChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return ActionChip(
-      avatar: Icon(icon, size: 18, color: AppColors.primary),
-      label: Text(label),
-      onPressed: () {},
-      backgroundColor: AppColors.surface,
-      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.2)),
     );
   }
 }
