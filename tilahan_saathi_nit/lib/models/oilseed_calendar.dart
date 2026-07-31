@@ -42,4 +42,42 @@ class OilseedCalendar {
 
   List<Activity> activitiesOn(DateTime day) =>
       activities.where((a) => a.coversDay(day)).toList();
+
+  /// Length of the full crop cycle in days, derived from the furthest-out
+  /// activity end date (the backend doesn't return the full stage list,
+  /// only the current one, so this is the only cycle-length signal we have).
+  int get totalCycleDays {
+    if (activities.isEmpty) return 0;
+    return activities
+        .map((a) => a.endDate.difference(sowingDate).inDays)
+        .reduce((a, b) => a > b ? a : b);
+  }
+
+  /// Fraction (0.0-1.0) of the crop cycle elapsed so far.
+  double get progress {
+    if (totalCycleDays <= 0) return 0;
+    return (cropAgeDays / totalCycleDays).clamp(0.0, 1.0);
+  }
+
+  /// Human-readable stage label that always has something sensible to show,
+  /// even when [currentStage] is null (not sown yet, or past the last
+  /// tracked stage).
+  String get stageLabel {
+    if (cropAgeDays < 0) return 'Not sown yet';
+    final stage = currentStage;
+    if (stage != null) return stage.name;
+    if (totalCycleDays > 0 && cropAgeDays > totalCycleDays) return 'Ready for Harvest';
+    return 'Growing';
+  }
+
+  /// Combined stage + day-count line for card/header display. Suppresses the
+  /// negative day count for a future sowing date (e.g. "Day -6") in favor of
+  /// a countdown to sowing.
+  String get stageAndDayLabel {
+    if (cropAgeDays < 0) {
+      final daysUntilSowing = -cropAgeDays;
+      return 'Sowing in $daysUntilSowing day${daysUntilSowing == 1 ? '' : 's'}';
+    }
+    return '$stageLabel · Day $cropAgeDays';
+  }
 }

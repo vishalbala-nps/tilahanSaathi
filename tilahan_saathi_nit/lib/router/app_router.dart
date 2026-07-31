@@ -34,8 +34,7 @@ abstract final class AppRoutes {
   static const suggestOilseed = '/suggest-oilseed';
   static const oilseedCalendar = '/oilseed-calendar';
   static const home = '/home';
-  static const myCrop = '/my-crop';
-  static const market = '/market';
+  static const governmentSchemes = '/schemes';
   static const profile = '/profile';
 }
 
@@ -127,15 +126,7 @@ class AppRouter {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.myCrop,
-                builder: (context, state) => const SizedBox.shrink(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.market,
+                path: AppRoutes.governmentSchemes,
                 builder: (context, state) => const SizedBox.shrink(),
               ),
             ],

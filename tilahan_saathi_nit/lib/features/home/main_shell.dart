@@ -3,9 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:tilahan_saathi/core/theme/app_colors.dart';
 import 'package:tilahan_saathi/core/widgets/app_card.dart';
 import 'package:tilahan_saathi/features/home/home_screen.dart';
-import 'package:tilahan_saathi/features/market/market_screen.dart';
-import 'package:tilahan_saathi/features/my_crop/my_crop_screen.dart';
 import 'package:tilahan_saathi/features/profile/profile_screen.dart';
+import 'package:tilahan_saathi/features/schemes/government_schemes_screen.dart';
 import 'package:tilahan_saathi/router/app_router.dart';
 
 class MainShell extends StatelessWidget {
@@ -15,8 +14,7 @@ class MainShell extends StatelessWidget {
 
   static const _tabs = [
     (AppRoutes.home, Icons.home_outlined, Icons.home_rounded, 'Home'),
-    (AppRoutes.myCrop, Icons.eco_outlined, Icons.eco_rounded, 'My Crop'),
-    (AppRoutes.market, Icons.storefront_outlined, Icons.storefront_rounded, 'Market'),
+    (AppRoutes.governmentSchemes, Icons.account_balance_outlined, Icons.account_balance_rounded, 'Schemes'),
     (AppRoutes.profile, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
   ];
 
@@ -27,8 +25,7 @@ class MainShell extends StatelessWidget {
         index: navigationShell.currentIndex,
         children: const [
           HomeScreen(),
-          MyCropScreen(),
-          MarketScreen(),
+          GovernmentSchemesScreen(),
           ProfileScreen(),
         ],
       ),

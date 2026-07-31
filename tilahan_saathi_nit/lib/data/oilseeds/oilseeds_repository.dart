@@ -35,4 +35,8 @@ class OilseedsRepository {
     final response = await dio.post<Map<String, dynamic>>('/lands/$landId/recommendations');
     return CropRecommendation.fromJson(response.data!);
   }
+
+  Future<void> deleteOilseed(int landId, int oilseedId) async {
+    await dio.delete<void>('/lands/$landId/oilseeds/$oilseedId');
+  }
 }

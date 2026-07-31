@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:tilahan_saathi/core/network/error_message.dart';
 import 'package:tilahan_saathi/core/theme/app_colors.dart';
@@ -9,6 +10,7 @@ import 'package:tilahan_saathi/models/activity.dart';
 import 'package:tilahan_saathi/models/enums.dart';
 import 'package:tilahan_saathi/models/oilseed_calendar.dart';
 import 'package:tilahan_saathi/providers/calendar_provider.dart';
+import 'package:tilahan_saathi/providers/oilseeds_provider.dart';
 
 class OilseedCalendarScreen extends ConsumerStatefulWidget {
   const OilseedCalendarScreen({super.key, required this.landId, required this.oilseedId});
@@ -23,6 +25,7 @@ class OilseedCalendarScreen extends ConsumerStatefulWidget {
 class _OilseedCalendarScreenState extends ConsumerState<OilseedCalendarScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  bool _isDeleting = false;
 
   CalendarKey get _key => (landId: widget.landId, oilseedId: widget.oilseedId);
 
@@ -40,13 +43,73 @@ class _OilseedCalendarScreenState extends ConsumerState<OilseedCalendarScreen> {
     }
   }
 
+  Future<void> _confirmDelete(OilseedCalendar calendar) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove this crop?'),
+        content: Text(
+          'This will permanently remove ${calendar.crop.label} and its calendar from this land. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => context.pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => context.pop(true),
+            child: const Text('Remove', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      await ref.read(oilseedsRepositoryProvider).deleteOilseed(widget.landId, widget.oilseedId);
+      ref.invalidate(oilseedsForLandProvider(widget.landId));
+      if (mounted) context.pop();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyErrorMessage(error))),
+        );
+        setState(() => _isDeleting = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final calendarAsync = ref.watch(calendarProvider(_key));
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Crop Calendar')),
+      appBar: AppBar(
+        title: const Text('Crop Calendar'),
+        actions: [
+          if (_isDeleting)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else
+            calendarAsync.maybeWhen(
+              data: (calendar) => IconButton(
+                icon: const Icon(Icons.delete_outline_rounded),
+                tooltip: 'Remove crop',
+                onPressed: () => _confirmDelete(calendar),
+              ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+        ],
+      ),
       body: SafeArea(
         child: calendarAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -84,34 +147,59 @@ class _OilseedCalendarScreenState extends ConsumerState<OilseedCalendarScreen> {
       padding: const EdgeInsets.all(20),
       children: [
         AppCard(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: calendar.crop.color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(calendar.crop.icon, color: calendar.crop.color, size: 32),
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: calendar.crop.color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(calendar.crop.icon, color: calendar.crop.color, size: 32),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          calendar.crop.label,
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          calendar.stageAndDayLabel,
+                          style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      calendar.crop.label,
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: calendar.progress,
+                        minHeight: 8,
+                        backgroundColor: calendar.crop.color.withValues(alpha: 0.15),
+                        valueColor: AlwaysStoppedAnimation<Color>(calendar.crop.color),
+                      ),
                     ),
-                    Text(
-                      calendar.currentStage != null
-                          ? '${calendar.currentStage!.name} · Day ${calendar.cropAgeDays}'
-                          : 'Day ${calendar.cropAgeDays}',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${(calendar.progress * 100).round()}%',
+                    style: theme.textTheme.labelMedium
+                        ?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                  ),
+                ],
               ),
             ],
           ),
