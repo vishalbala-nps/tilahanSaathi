@@ -1,0 +1,7 @@
+.venv
+__pycache__
+.DS_Store
+.env
+secrets
+*.db
+test_auth.html
