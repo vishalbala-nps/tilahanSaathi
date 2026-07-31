@@ -12,6 +12,7 @@ from app.models.user import User
 from app.schemas.calendar import ActivityCompleteRequest, CalendarRead
 from app.schemas.oilseed import OilseedCreate, OilseedRead
 from app.services import crop_calendar as crop_calendar_service
+from app.services.crop_recommendation import validate_crop_season
 
 router = APIRouter(prefix="/lands/{land_id}/oilseeds", tags=["oilseeds"])
 
@@ -29,6 +30,7 @@ async def create_oilseed(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Sowing date cannot be in the future",
         )
+    validate_crop_season(body.crop, body.sowing_date)
     oilseed = Oilseed(land_id=land_id, crop=body.crop, sowing_date=body.sowing_date)
     db.add(oilseed)
     await db.commit()

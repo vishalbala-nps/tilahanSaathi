@@ -1,6 +1,8 @@
+from datetime import date
+
 from fastapi import HTTPException, status
 
-from app.models.enums import OilseedCrop
+from app.models.enums import OilseedCrop, PlantingSeason
 from app.models.land import Land
 from app.schemas.recommendation import CropRecommendationResponse
 from app.services.llm_client import LLMCallError, get_structured_completion
@@ -77,6 +79,43 @@ OILSEED_AGRONOMY_KNOWLEDGE: dict[OilseedCrop, dict] = {
         "tribal-belt/hill-region crop, tolerates low fertility.",
     },
 }
+
+
+# First-draft month -> season mapping (sowing month, not full season span). Actual
+# kharif/rabi/summer windows vary by region in India — an agronomist should confirm
+# these boundaries before relying on this for production guidance.
+_MONTH_TO_SEASON: dict[int, PlantingSeason] = {
+    1: PlantingSeason.RABI,
+    2: PlantingSeason.RABI,
+    3: PlantingSeason.SUMMER,
+    4: PlantingSeason.SUMMER,
+    5: PlantingSeason.SUMMER,
+    6: PlantingSeason.KHARIF,
+    7: PlantingSeason.KHARIF,
+    8: PlantingSeason.KHARIF,
+    9: PlantingSeason.KHARIF,
+    10: PlantingSeason.RABI,
+    11: PlantingSeason.RABI,
+    12: PlantingSeason.RABI,
+}
+
+
+def derive_season_from_sowing_date(sowing_date: date) -> PlantingSeason:
+    return _MONTH_TO_SEASON[sowing_date.month]
+
+
+def validate_crop_season(crop: OilseedCrop, sowing_date: date) -> None:
+    season = derive_season_from_sowing_date(sowing_date)
+    suitable_seasons = OILSEED_AGRONOMY_KNOWLEDGE[crop]["suitable_season"]
+    if season.value not in suitable_seasons:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"{crop.value} is not typically sown in {season.value} season "
+                f"(sowing month: {sowing_date.strftime('%B')}). It is suited to: "
+                f"{', '.join(suitable_seasons)}."
+            ),
+        )
 
 
 def _render_knowledge_base() -> str:
