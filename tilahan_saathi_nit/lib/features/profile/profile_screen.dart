@@ -12,7 +12,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(farmProfileProvider);
+    final user = ref.read(authRepositoryProvider).currentUser;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -35,11 +35,11 @@ class ProfileScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Farmer',
+                        user?.displayName?.isNotEmpty == true ? user!.displayName! : 'Farmer',
                         style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '+91 XXXXX XXXXX',
+                        user?.email ?? '—',
                         style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
                       ),
                     ],
@@ -49,27 +49,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Farm Information',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                _InfoRow(label: 'Location', value: '${profile.district ?? "—"}, ${profile.state ?? "—"}'),
-                _InfoRow(label: 'Land area', value: '${profile.landAreaAcres.toStringAsFixed(1)} acres'),
-                _InfoRow(label: 'Soil', value: profile.soilType ?? '—'),
-                _InfoRow(label: 'Water', value: profile.waterAvailability ?? '—'),
-                _InfoRow(label: 'Season', value: profile.planningSeason ?? '—'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
           const _SettingsTile(icon: Icons.language_rounded, title: 'Language', subtitle: 'English'),
-          const _SettingsTile(icon: Icons.notifications_outlined, title: 'Notifications', subtitle: 'Enabled'),
-          const _SettingsTile(icon: Icons.help_outline_rounded, title: 'Help & Support', subtitle: 'FAQs, contact'),
           const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.logout_rounded, color: AppColors.error),
@@ -78,32 +58,17 @@ class ProfileScreen extends ConsumerWidget {
               style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.error),
             ),
             onTap: () async {
-              await ref.read(authRepositoryProvider).signOut();
+              try {
+                await ref.read(authRepositoryProvider).signOut();
+              } catch (_) {
+                // Local storage is cleared inside signOut() regardless of
+                // whether the Firebase call itself succeeds — always proceed
+                // to the login screen either way.
+              }
               ref.read(farmProfileProvider.notifier).reset();
               if (context.mounted) context.go(AppRoutes.login);
             },
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
-          Text(value, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
         ],
       ),
     );

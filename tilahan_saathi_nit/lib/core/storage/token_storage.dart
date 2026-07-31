@@ -13,7 +13,9 @@ class TokenStorage {
   Future<void> saveAccessToken(String token) =>
       _storage.write(key: _accessTokenKey, value: token);
 
-  Future<void> clear() => _storage.delete(key: _accessTokenKey);
+  /// Wipes everything in secure storage, not just the access token, so
+  /// logout never leaves stale data behind for the next session.
+  Future<void> clear() => _storage.deleteAll();
 }
 
 

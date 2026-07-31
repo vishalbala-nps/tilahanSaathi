@@ -52,9 +52,15 @@ class AuthRepository {
     return _firebaseAuth.sendPasswordResetEmail(email: email);
   }
 
+  /// Clears local storage no matter what, even if the Firebase sign-out call
+  /// itself fails (e.g. no network) — a stuck local session is worse than a
+  /// still-active Firebase one.
   Future<void> signOut() async {
-    await _firebaseAuth.signOut();
-    await tokenStorage.clear();
+    try {
+      await _firebaseAuth.signOut();
+    } finally {
+      await tokenStorage.clear();
+    }
   }
 
   /// Exchanges the Firebase ID token for a backend session and persists the

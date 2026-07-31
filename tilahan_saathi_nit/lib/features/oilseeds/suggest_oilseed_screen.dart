@@ -183,7 +183,10 @@ class _SuggestOilseedScreenState extends ConsumerState<SuggestOilseedScreen> {
           PrimaryButton(
             label: 'Plant This Crop',
             icon: Icons.add_rounded,
-            onPressed: () => context.push(AppRoutes.addOilseed, extra: crop),
+            onPressed: () {
+              context.pop();
+              context.push(AppRoutes.addOilseed, extra: crop);
+            },
           ),
         ],
       ),
