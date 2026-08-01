@@ -99,6 +99,5 @@ async def get_land_weather(
     return WeatherRead(
         temperature_celsius=weather["temperature_2m"],
         humidity_percent=weather["relative_humidity_2m"],
-        current_rainfall_mm=weather["current_precipitation"],
         rainfall_today_mm=weather["today_precipitation_sum"],
     )

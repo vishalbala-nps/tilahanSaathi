@@ -16,11 +16,11 @@ async def get_current_weather(latitude: float, longitude: float) -> dict:
                 params={
                     "latitude": latitude,
                     "longitude": longitude,
-                    # "current" precipitation is a backward-looking sum over the
-                    # model's most recent 15-minute interval, not a full-day total
-                    # — "daily" precipitation_sum (today only, via forecast_days=1)
-                    # is what actually answers "how much has it rained today".
-                    "current": "temperature_2m,relative_humidity_2m,precipitation",
+                    # "current" precipitation would be a backward-looking sum over
+                    # just the last 15 minutes, not a meaningful daily total — use
+                    # "daily" precipitation_sum (today only, via forecast_days=1)
+                    # instead, which actually answers "how much has it rained today".
+                    "current": "temperature_2m,relative_humidity_2m",
                     "daily": "precipitation_sum",
                     "timezone": "auto",
                     "forecast_days": 1,
@@ -31,7 +31,6 @@ async def get_current_weather(latitude: float, longitude: float) -> dict:
             return {
                 "temperature_2m": payload["current"]["temperature_2m"],
                 "relative_humidity_2m": payload["current"]["relative_humidity_2m"],
-                "current_precipitation": payload["current"]["precipitation"],
                 "today_precipitation_sum": payload["daily"]["precipitation_sum"][0],
             }
     except (httpx.HTTPError, KeyError, IndexError) as exc:

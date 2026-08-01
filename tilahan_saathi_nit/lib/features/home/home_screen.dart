@@ -208,50 +208,33 @@ class _WeatherCard extends ConsumerWidget {
         onRetry: () => ref.invalidate(landWeatherProvider(landId)),
       ),
       data: (weather) => AppCard(
-        child: Column(
+        child: Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _WeatherStat(
-                    icon: Icons.thermostat_rounded,
-                    color: AppColors.accent,
-                    value: '${weather.temperatureCelsius.toStringAsFixed(1)}°C',
-                    label: 'Temperature',
-                  ),
-                ),
-                const _WeatherDivider(),
-                Expanded(
-                  child: _WeatherStat(
-                    icon: Icons.water_drop_rounded,
-                    color: AppColors.skyBlue,
-                    value: '${weather.humidityPercent.toStringAsFixed(0)}%',
-                    label: 'Humidity',
-                  ),
-                ),
-              ],
+            Expanded(
+              child: _WeatherStat(
+                icon: Icons.thermostat_rounded,
+                color: AppColors.accent,
+                value: '${weather.temperatureCelsius.toStringAsFixed(1)}°C',
+                label: 'Temperature',
+              ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _WeatherStat(
-                    icon: Icons.umbrella_rounded,
-                    color: AppColors.primary,
-                    value: '${weather.currentRainfallMm.toStringAsFixed(1)} mm',
-                    label: 'Current Rainfall',
-                  ),
-                ),
-                const _WeatherDivider(),
-                Expanded(
-                  child: _WeatherStat(
-                    icon: Icons.grain_rounded,
-                    color: AppColors.secondary,
-                    value: '${weather.rainfallTodayMm.toStringAsFixed(1)} mm',
-                    label: 'Rainfall Today',
-                  ),
-                ),
-              ],
+            const _WeatherDivider(),
+            Expanded(
+              child: _WeatherStat(
+                icon: Icons.water_drop_rounded,
+                color: AppColors.skyBlue,
+                value: '${weather.humidityPercent.toStringAsFixed(0)}%',
+                label: 'Humidity',
+              ),
+            ),
+            const _WeatherDivider(),
+            Expanded(
+              child: _WeatherStat(
+                icon: Icons.umbrella_rounded,
+                color: AppColors.primary,
+                value: '${weather.rainfallTodayMm.toStringAsFixed(1)} mm',
+                label: 'Rainfall Today',
+              ),
             ),
           ],
         ),
