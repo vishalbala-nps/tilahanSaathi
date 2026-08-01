@@ -1,5 +1,6 @@
 import 'package:tilahan_saathi/core/network/api_client.dart';
 import 'package:tilahan_saathi/models/land.dart';
+import 'package:tilahan_saathi/models/weather.dart';
 
 /// Talks to the backend's `/lands` endpoints.
 class LandsRepository {
@@ -17,5 +18,10 @@ class LandsRepository {
 
   Future<void> deleteLand(int id) async {
     await dio.delete<void>('/lands/$id');
+  }
+
+  Future<Weather> getWeather(int landId) async {
+    final response = await dio.get<Map<String, dynamic>>('/lands/$landId/weather');
+    return Weather.fromJson(response.data!);
   }
 }

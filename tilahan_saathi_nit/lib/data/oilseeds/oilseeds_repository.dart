@@ -32,8 +32,22 @@ class OilseedsRepository {
     return Oilseed.fromJson(response.data!);
   }
 
-  Future<CropRecommendation> recommendCrop(int landId) async {
-    final response = await dio.post<Map<String, dynamic>>('/lands/$landId/recommendations');
+  Future<CropRecommendation> recommendCrop(
+    int landId, {
+    required int nitrogen,
+    required int phosphorus,
+    required int potassium,
+    required double ph,
+  }) async {
+    final response = await dio.post<Map<String, dynamic>>(
+      '/lands/$landId/recommendations',
+      data: {
+        'nitrogen': nitrogen,
+        'phosphorus': phosphorus,
+        'potassium': potassium,
+        'ph': ph,
+      },
+    );
     return CropRecommendation.fromJson(response.data!);
   }
 

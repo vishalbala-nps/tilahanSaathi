@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.models.land import Land
 from app.models.user import User
 from app.schemas.land import LandCreate, LandRead
-from app.schemas.recommendation import CropRecommendationResponse
+from app.schemas.recommendation import CropRecommendationResponse, SoilNutrientRequest
 from app.schemas.weather import WeatherRead
 from app.services import crop_recommendation as crop_recommendation_service
 from app.services import geocoding as geocoding_service
@@ -62,11 +62,12 @@ async def delete_land(
 @router.post("/{land_id}/recommendations", response_model=CropRecommendationResponse)
 async def recommend_crops(
     land_id: int,
+    body: SoilNutrientRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> CropRecommendationResponse:
     land = await get_owned_land(land_id, current_user.id, db)
-    return await crop_recommendation_service.generate_recommendation(land)
+    return await crop_recommendation_service.generate_recommendation(land, body, db)
 
 
 @router.get("/{land_id}/weather", response_model=WeatherRead)

@@ -126,21 +126,6 @@ enum ActivityStatus {
       ActivityStatus.values.firstWhere((e) => e.apiValue == value);
 }
 
-enum ConfidenceLevel {
-  high('high', 'High', AppColors.primary),
-  medium('medium', 'Medium', AppColors.accent),
-  low('low', 'Low', AppColors.textSecondary);
-
-  const ConfidenceLevel(this.apiValue, this.label, this.color);
-
-  final String apiValue;
-  final String label;
-  final Color color;
-
-  static ConfidenceLevel fromApi(String value) =>
-      ConfidenceLevel.values.firstWhere((e) => e.apiValue == value);
-}
-
 enum EvaluationFactor {
   location('location', 'Location', Icons.location_on_outlined),
   season('season', 'Season', Icons.calendar_month_outlined),

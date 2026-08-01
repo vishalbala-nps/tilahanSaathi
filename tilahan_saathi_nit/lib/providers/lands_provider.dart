@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tilahan_saathi/data/lands/lands_repository.dart';
 import 'package:tilahan_saathi/models/land.dart';
+import 'package:tilahan_saathi/models/weather.dart';
 
 final landsRepositoryProvider = Provider<LandsRepository>((ref) => LandsRepository());
 
@@ -15,4 +16,8 @@ final landsRepositoryProvider = Provider<LandsRepository>((ref) => LandsReposito
 // recomputed fresh — with a valid token — next time something watches it.
 final landsListProvider = FutureProvider.autoDispose<List<Land>>(
   (ref) => ref.read(landsRepositoryProvider).getLands(),
+);
+
+final landWeatherProvider = FutureProvider.autoDispose.family<Weather, int>(
+  (ref, landId) => ref.read(landsRepositoryProvider).getWeather(landId),
 );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tilahan_saathi/core/network/error_message.dart';
@@ -7,65 +8,188 @@ import 'package:tilahan_saathi/core/widgets/app_card.dart';
 import 'package:tilahan_saathi/core/widgets/async_error_view.dart';
 import 'package:tilahan_saathi/core/widgets/primary_button.dart';
 import 'package:tilahan_saathi/models/crop_recommendation.dart';
-import 'package:tilahan_saathi/models/enums.dart';
+import 'package:tilahan_saathi/providers/lands_provider.dart';
 import 'package:tilahan_saathi/providers/oilseeds_provider.dart';
 import 'package:tilahan_saathi/providers/selected_land_provider.dart';
 import 'package:tilahan_saathi/router/app_router.dart';
 
-class SuggestOilseedScreen extends ConsumerStatefulWidget {
+class SuggestOilseedScreen extends ConsumerWidget {
   const SuggestOilseedScreen({super.key});
 
   @override
-  ConsumerState<SuggestOilseedScreen> createState() => _SuggestOilseedScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final landAsync = ref.watch(selectedLandProvider);
 
-class _SuggestOilseedScreenState extends ConsumerState<SuggestOilseedScreen> {
-  bool _isLoading = true;
-  CropRecommendation? _result;
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchRecommendation();
-  }
-
-  Future<void> _fetchRecommendation() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    final land = ref.read(selectedLandProvider).value;
-    if (land == null) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'No land selected.';
-      });
-      return;
-    }
-
-    try {
-      final result = await ref.read(oilseedsRepositoryProvider).recommendCrop(land.id);
-      if (mounted) setState(() => _result = result);
-    } catch (error) {
-      if (mounted) setState(() => _errorMessage = friendlyErrorMessage(error));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Suggested Oilseed')),
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? AsyncErrorView(message: _errorMessage!, onRetry: _fetchRecommendation)
-                : _buildResult(Theme.of(context), _result!),
+        child: landAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => AsyncErrorView(
+            message: friendlyErrorMessage(error),
+            onRetry: () => ref.invalidate(landsListProvider),
+          ),
+          data: (land) => land == null
+              ? AsyncErrorView(
+                  message: 'No land selected.',
+                  onRetry: () => ref.invalidate(landsListProvider),
+                )
+              : _SuggestOilseedForm(landId: land.id),
+        ),
+      ),
+    );
+  }
+}
+
+class _SuggestOilseedForm extends ConsumerStatefulWidget {
+  const _SuggestOilseedForm({required this.landId});
+
+  final int landId;
+
+  @override
+  ConsumerState<_SuggestOilseedForm> createState() => _SuggestOilseedFormState();
+}
+
+class _SuggestOilseedFormState extends ConsumerState<_SuggestOilseedForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _nitrogenController = TextEditingController();
+  final _phosphorusController = TextEditingController();
+  final _potassiumController = TextEditingController();
+  final _phController = TextEditingController();
+
+  bool _isSubmitting = false;
+  String? _errorMessage;
+  CropRecommendation? _result;
+
+  @override
+  void dispose() {
+    _nitrogenController.dispose();
+    _phosphorusController.dispose();
+    _potassiumController.dispose();
+    _phController.dispose();
+    super.dispose();
+  }
+
+  String? _validateRequired(String? value, String label) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return '$label is required';
+    return null;
+  }
+
+  String? _validatePh(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) return 'pH is required';
+    final parsed = double.tryParse(trimmed);
+    if (parsed == null) return 'Enter a valid number';
+    if (parsed < 0 || parsed > 14) return 'pH must be between 0 and 14';
+    return null;
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await ref.read(oilseedsRepositoryProvider).recommendCrop(
+            widget.landId,
+            nitrogen: int.parse(_nitrogenController.text.trim()),
+            phosphorus: int.parse(_phosphorusController.text.trim()),
+            potassium: int.parse(_potassiumController.text.trim()),
+            ph: double.parse(_phController.text.trim()),
+          );
+      if (mounted) setState(() => _result = result);
+    } catch (error) {
+      if (mounted) setState(() => _errorMessage = friendlyErrorMessage(error));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _editValues() => setState(() => _result = null);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final result = _result;
+    return result == null ? _buildForm(theme) : _buildResult(theme, result);
+  }
+
+  Widget _buildForm(ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Enter your latest soil test results to get a tailored crop recommendation.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 24),
+            AppCard(
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nitrogenController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(labelText: 'Nitrogen (N)'),
+                    validator: (value) => _validateRequired(value, 'Nitrogen'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _phosphorusController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(labelText: 'Phosphorus (P)'),
+                    validator: (value) => _validateRequired(value, 'Phosphorus'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _potassiumController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(labelText: 'Potassium (K)'),
+                    validator: (value) => _validateRequired(value, 'Potassium'),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _phController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$'))],
+                    decoration: const InputDecoration(labelText: 'Soil pH'),
+                    validator: _validatePh,
+                  ),
+                ],
+              ),
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.error),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 24),
+            _isSubmitting
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : PrimaryButton(
+                    label: 'Get Recommendation',
+                    icon: Icons.auto_awesome,
+                    onPressed: _submit,
+                  ),
+          ],
+        ),
       ),
     );
   }
@@ -78,6 +202,15 @@ class _SuggestOilseedScreenState extends ConsumerState<SuggestOilseedScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _editValues,
+              icon: const Icon(Icons.edit_rounded, size: 18),
+              label: const Text('Edit Soil Values'),
+            ),
+          ),
+          const SizedBox(height: 8),
           AppCard(
             child: Column(
               children: [
@@ -95,8 +228,6 @@ class _SuggestOilseedScreenState extends ConsumerState<SuggestOilseedScreen> {
                   crop.label,
                   style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 8),
-                _ConfidenceBadge(confidence: result.confidence),
               ],
             ),
           ),
@@ -143,42 +274,6 @@ class _SuggestOilseedScreenState extends ConsumerState<SuggestOilseedScreen> {
               ),
             ),
           ),
-          if (result.alternatives.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Alternatives Considered',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...result.alternatives.map(
-              (alt) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: AppCard(
-                  child: Row(
-                    children: [
-                      Icon(alt.crop.icon, color: alt.crop.color),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              alt.crop.label,
-                              style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                            ),
-                            Text(
-                              alt.reasonNotChosen,
-                              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
           const SizedBox(height: 8),
           PrimaryButton(
             label: 'Plant This Crop',
@@ -189,30 +284,6 @@ class _SuggestOilseedScreenState extends ConsumerState<SuggestOilseedScreen> {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ConfidenceBadge extends StatelessWidget {
-  const _ConfidenceBadge({required this.confidence});
-
-  final ConfidenceLevel confidence;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: confidence.color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        '${confidence.label} Confidence',
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: confidence.color,
-              fontWeight: FontWeight.w700,
-            ),
       ),
     );
   }

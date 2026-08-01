@@ -37,12 +37,6 @@ class OilseedCrop(str, enum.Enum):
     NIGER = "niger"
 
 
-class ConfidenceLevel(str, enum.Enum):
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-
-
 class EvaluationFactor(str, enum.Enum):
     LOCATION = "location"
     SEASON = "season"

@@ -66,6 +66,8 @@ class _HomeContent extends ConsumerWidget {
       children: [
         _CurrentLandCard(land: land),
         const SizedBox(height: 20),
+        _WeatherCard(landId: land.id),
+        const SizedBox(height: 20),
         Row(
           children: [
             Expanded(
@@ -175,6 +177,125 @@ class _CurrentLandCard extends StatelessWidget {
           const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
         ],
       ),
+    );
+  }
+}
+
+class _WeatherCard extends ConsumerWidget {
+  const _WeatherCard({required this.landId});
+
+  final int landId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weatherAsync = ref.watch(landWeatherProvider(landId));
+
+    return weatherAsync.when(
+      loading: () => const AppCard(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      ),
+      error: (error, _) => AsyncErrorView(
+        message: friendlyErrorMessage(error),
+        onRetry: () => ref.invalidate(landWeatherProvider(landId)),
+      ),
+      data: (weather) => AppCard(
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _WeatherStat(
+                    icon: Icons.thermostat_rounded,
+                    color: AppColors.accent,
+                    value: '${weather.temperatureCelsius.toStringAsFixed(1)}°C',
+                    label: 'Temperature',
+                  ),
+                ),
+                const _WeatherDivider(),
+                Expanded(
+                  child: _WeatherStat(
+                    icon: Icons.water_drop_rounded,
+                    color: AppColors.skyBlue,
+                    value: '${weather.humidityPercent.toStringAsFixed(0)}%',
+                    label: 'Humidity',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _WeatherStat(
+                    icon: Icons.umbrella_rounded,
+                    color: AppColors.primary,
+                    value: '${weather.currentRainfallMm.toStringAsFixed(1)} mm',
+                    label: 'Current Rainfall',
+                  ),
+                ),
+                const _WeatherDivider(),
+                Expanded(
+                  child: _WeatherStat(
+                    icon: Icons.grain_rounded,
+                    color: AppColors.secondary,
+                    value: '${weather.rainfallTodayMm.toStringAsFixed(1)} mm',
+                    label: 'Rainfall Today',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeatherDivider extends StatelessWidget {
+  const _WeatherDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, height: 40, color: AppColors.textSecondary.withValues(alpha: 0.15));
+  }
+}
+
+class _WeatherStat extends StatelessWidget {
+  const _WeatherStat({
+    required this.icon,
+    required this.color,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 6),
+        Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(color: AppColors.textSecondary),
+        ),
+      ],
     );
   }
 }
