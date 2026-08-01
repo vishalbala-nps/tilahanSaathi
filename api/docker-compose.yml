@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tilahan_saathi
+      POSTGRES_PASSWORD: tilahan_saathi
+      POSTGRES_DB: tilahan_saathi
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tilahan_saathi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://tilahan_saathi:tilahan_saathi@db:5432/tilahan_saathi
+      OLLAMA_API_BASE: http://host.docker.internal:11434
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./secrets:/app/secrets:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

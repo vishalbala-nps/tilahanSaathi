@@ -1,0 +1,10 @@
+.venv
+__pycache__
+*.pyc
+.git
+.env
+.env.example
+secrets
+tilahan_saathi.db
+test_auth.html
+.DS_Store
