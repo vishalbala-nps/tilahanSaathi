@@ -21,4 +21,8 @@ class Land(Base):
     )
     last_grown_crop: Mapped[str] = mapped_column(String(100))
     planting_season: Mapped[PlantingSeason] = mapped_column(Enum(PlantingSeason, name="planting_season"))
+    # Resolved lazily on first /weather call (see app/services/geocoding.py) and
+    # cached here so we don't re-geocode farm_location on every request.
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

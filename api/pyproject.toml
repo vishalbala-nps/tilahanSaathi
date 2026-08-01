@@ -11,10 +11,12 @@ dependencies = [
     "fastapi>=0.141.1",
     "firebase-admin>=7.5.0",
     "httpx>=0.28.1",
+    "joblib>=1.5.3",
     "litellm>=1.94.1",
     "pydantic-settings[dotenv]>=2.14.2",
     "pyjwt>=2.13.0",
     "python-dotenv>=1.2.2",
+    "scikit-learn>=1.9.0",
     "sqlalchemy[asyncio]>=2.0.51",
     "uvicorn>=0.52.0",
 ]

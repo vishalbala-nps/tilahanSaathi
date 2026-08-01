@@ -8,7 +8,11 @@ from app.models.land import Land
 from app.models.user import User
 from app.schemas.land import LandCreate, LandRead
 from app.schemas.recommendation import CropRecommendationResponse
+from app.schemas.weather import WeatherRead
 from app.services import crop_recommendation as crop_recommendation_service
+from app.services import geocoding as geocoding_service
+from app.services import weather as weather_service
+from app.services.weather import WeatherFetchError
 
 router = APIRouter(prefix="/lands", tags=["lands"])
 
@@ -63,3 +67,37 @@ async def recommend_crops(
 ) -> CropRecommendationResponse:
     land = await get_owned_land(land_id, current_user.id, db)
     return await crop_recommendation_service.generate_recommendation(land)
+
+
+@router.get("/{land_id}/weather", response_model=WeatherRead)
+async def get_land_weather(
+    land_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> WeatherRead:
+    land = await get_owned_land(land_id, current_user.id, db)
+
+    if land.latitude is None or land.longitude is None:
+        coordinates = await geocoding_service.resolve_coordinates(land.farm_location)
+        if coordinates is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Could not resolve this land's location for a weather lookup",
+            )
+        land.latitude, land.longitude = coordinates
+        await db.commit()
+        await db.refresh(land)
+
+    try:
+        weather = await weather_service.get_current_weather(land.latitude, land.longitude)
+    except WeatherFetchError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, detail="Weather service unavailable"
+        ) from exc
+
+    return WeatherRead(
+        temperature_celsius=weather["temperature_2m"],
+        humidity_percent=weather["relative_humidity_2m"],
+        current_rainfall_mm=weather["current_precipitation"],
+        rainfall_today_mm=weather["today_precipitation_sum"],
+    )
