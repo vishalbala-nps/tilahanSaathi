@@ -6,3 +6,4 @@ secrets
 *.db
 test_auth.html
 .env_render
+.claude
