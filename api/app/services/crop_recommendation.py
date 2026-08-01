@@ -216,7 +216,7 @@ async def generate_recommendation(
     print("pH: ",nutrients.ph)
     print("Raianfall: ",rainfall*100)
 
-    crop = await oilseed_predictor.predict_crop(
+    crop, confidence = await oilseed_predictor.predict_crop(
         nitrogen=nutrients.nitrogen,
         phosphorus=nutrients.phosphorus,
         potassium=nutrients.potassium,
@@ -226,6 +226,7 @@ async def generate_recommendation(
         rainfall=rainfall*100,
     )
     print("Predicted Crop: ",crop)
+    print("Confidence: ",confidence)
     system_prompt = _build_explanation_system_prompt(crop)
     user_prompt = _build_explanation_user_prompt(land, nutrients, temperature, humidity, rainfall)
 
@@ -252,6 +253,7 @@ async def generate_recommendation(
 
     return CropRecommendationResponse(
         recommended_crop=crop,
+        confidence_percent=confidence * 100,
         reasoning=explanation.reasoning,
         positive_factors=explanation.positive_factors,
     )

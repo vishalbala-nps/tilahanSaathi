@@ -228,6 +228,8 @@ class _SuggestOilseedFormState extends ConsumerState<_SuggestOilseedForm> {
                   crop.label,
                   style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 12),
+                _ConfidenceScore(percent: result.confidencePercent),
               ],
             ),
           ),
@@ -285,6 +287,55 @@ class _SuggestOilseedFormState extends ConsumerState<_SuggestOilseedForm> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ConfidenceScore extends StatelessWidget {
+  const _ConfidenceScore({required this.percent});
+
+  final double percent;
+
+  Color get _color {
+    if (percent >= 70) return AppColors.primary;
+    if (percent >= 40) return AppColors.accent;
+    return AppColors.error;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Tilahaan Score',
+              style: theme.textTheme.labelMedium?.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${percent.round()}%',
+              style: theme.textTheme.labelMedium?.copyWith(color: _color, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          width: 160,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: (percent / 100).clamp(0.0, 1.0),
+              minHeight: 8,
+              backgroundColor: _color.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(_color),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

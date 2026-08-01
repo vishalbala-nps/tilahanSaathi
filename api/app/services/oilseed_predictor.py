@@ -11,9 +11,12 @@ _model = joblib.load(_MODEL_PATH)
 
 def _predict_sync(
     n: int, p: int, k: int, temperature: float, humidity: float, ph: float, rainfall: float
-) -> OilseedCrop:
-    [label] = _model.predict([[n, p, k, temperature, humidity, ph, rainfall]])
-    return OilseedCrop(str(label))
+) -> tuple[OilseedCrop, float]:
+    [proba] = _model.predict_proba([[n, p, k, temperature, humidity, ph, rainfall]])
+    best_index = proba.argmax()
+    crop = OilseedCrop(str(_model.classes_[best_index]))
+    confidence = float(proba[best_index])  # 0.0-1.0, the model's probability for this class
+    return crop, confidence
 
 
 async def predict_crop(
@@ -25,7 +28,7 @@ async def predict_crop(
     humidity: float,
     ph: float,
     rainfall: float,
-) -> OilseedCrop:
+) -> tuple[OilseedCrop, float]:
     return await asyncio.to_thread(
         _predict_sync, nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall
     )

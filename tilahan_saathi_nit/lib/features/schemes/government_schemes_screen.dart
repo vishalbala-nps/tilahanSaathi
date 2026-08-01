@@ -73,14 +73,6 @@ class _GovernmentSchemesScreenState extends ConsumerState<GovernmentSchemesScree
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text(
-            result.disclaimer,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 20),
           if (hasNoSchemes)
             AppCard(
               child: Column(

@@ -20,5 +20,6 @@ class PositiveFactor(BaseModel):
 
 class CropRecommendationResponse(BaseModel):
     recommended_crop: OilseedCrop
+    confidence_percent: float = Field(..., ge=0, le=100, description="The prediction model's confidence in recommended_crop")
     reasoning: str = Field(..., max_length=600)
     positive_factors: list[PositiveFactor] = Field(..., min_length=1, max_length=4)

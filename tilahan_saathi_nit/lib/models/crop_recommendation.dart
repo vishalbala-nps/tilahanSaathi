@@ -23,6 +23,7 @@ class PositiveFactor {
 class CropRecommendation {
   const CropRecommendation({
     required this.recommendedCrop,
+    required this.confidencePercent,
     required this.reasoning,
     required this.positiveFactors,
   });
@@ -30,6 +31,7 @@ class CropRecommendation {
   factory CropRecommendation.fromJson(Map<String, dynamic> json) {
     return CropRecommendation(
       recommendedCrop: OilseedCrop.fromApi(json['recommended_crop'] as String),
+      confidencePercent: (json['confidence_percent'] as num).toDouble(),
       reasoning: json['reasoning'] as String,
       positiveFactors: (json['positive_factors'] as List<dynamic>)
           .map((e) => PositiveFactor.fromJson(e as Map<String, dynamic>))
@@ -38,6 +40,7 @@ class CropRecommendation {
   }
 
   final OilseedCrop recommendedCrop;
+  final double confidencePercent;
   final String reasoning;
   final List<PositiveFactor> positiveFactors;
 }
