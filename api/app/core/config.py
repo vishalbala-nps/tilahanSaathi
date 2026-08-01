@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.2
     llm_timeout_seconds: int = 90  # local Ollama models can take ~60s; cloud providers are much faster
 
+    agmarknet_api_url: str = "https://api.agmarknet.gov.in/v1/dashboard-data/"
+    agmarknet_timeout_seconds: int = 10
+
     @model_validator(mode="after")
     def _resolve_relative_sqlite_path(self) -> "Settings":
         # A relative sqlite path (the default, and what .env ships with) resolves

@@ -25,11 +25,6 @@ async def create_oilseed(
     db: AsyncSession = Depends(get_db),
 ) -> Oilseed:
     await get_owned_land(land_id, current_user.id, db)
-    if body.sowing_date > date.today():
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Sowing date cannot be in the future",
-        )
     validate_crop_season(body.crop, body.sowing_date)
     oilseed = Oilseed(land_id=land_id, crop=body.crop, sowing_date=body.sowing_date)
     db.add(oilseed)
