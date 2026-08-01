@@ -8,10 +8,13 @@ from app.api.deps import get_current_user, get_owned_land
 from app.db.session import get_db
 from app.models.crop_calendar import CropCalendar, CropCalendarActivity
 from app.models.oilseed import Oilseed
+from app.models.price import CommodityPrice
 from app.models.user import User
 from app.schemas.calendar import ActivityCompleteRequest, CalendarRead
 from app.schemas.oilseed import OilseedCreate, OilseedRead
+from app.schemas.price import PriceRead
 from app.services import crop_calendar as crop_calendar_service
+from app.services import price_sync as price_sync_service
 from app.services.crop_recommendation import validate_crop_season
 
 router = APIRouter(prefix="/lands/{land_id}/oilseeds", tags=["oilseeds"])
@@ -158,3 +161,15 @@ async def complete_calendar_activity(
     assert found is not None
     calendar, activities = found
     return crop_calendar_service.build_calendar_read(calendar, oilseed, activities)
+
+
+@router.get("/{oilseed_id}/price", response_model=list[PriceRead])
+async def get_oilseed_price(
+    land_id: int,
+    oilseed_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[CommodityPrice]:
+    await get_owned_land(land_id, current_user.id, db)
+    oilseed = await _get_owned_oilseed(land_id, oilseed_id, db)
+    return await price_sync_service.get_prices_for_crop(db, oilseed.crop)

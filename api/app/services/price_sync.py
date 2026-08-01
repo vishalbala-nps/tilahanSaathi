@@ -7,9 +7,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.upsert import upsert
+from app.models.enums import OilseedCrop
 from app.models.price import CommodityPrice, PriceSyncState
 
 logger = logging.getLogger(__name__)
+
+# Maps our own OilseedCrop enum to the exact Agmarknet commodity_name string
+# for that crop, so a farmer's Oilseed record can be looked up by crop. This
+# is the inverse of the ingestion-time mapping removed earlier — ingestion
+# now stores every commodity Agmarknet reports (name changes there just
+# flow through automatically), but *this* lookup direction still needs a
+# fixed name to search for. Unlike GovernmentScheme's DB-backed data, this
+# stays a hardcoded dict since the left side (OilseedCrop) is our own
+# code-owned enum — but the right side is still government-controlled text,
+# so a future Agmarknet rename would silently break the lookup for that crop
+# until this dict is updated. CASTOR and LINSEED aren't in Agmarknet's data
+# at all, so they're intentionally absent here.
+OILSEED_CROP_TO_COMMODITY_NAME: dict[OilseedCrop, str] = {
+    OilseedCrop.GROUNDNUT: "Groundnut",
+    OilseedCrop.SOYBEAN: "Soyabean",
+    OilseedCrop.SESAME: "Sesamum(Sesame,Gingelly,Til)",
+    OilseedCrop.MUSTARD: "Mustard",
+    OilseedCrop.SUNFLOWER: "Sunflower/Sunflower Seed",
+    OilseedCrop.SAFFLOWER: "Safflower",
+    OilseedCrop.NIGER: "Niger Seed(Ramtil)",
+}
 
 # (price field key, arrival field key) pairs in each Agmarknet record.
 _PRICE_ARRIVAL_FIELD_PAIRS = [
@@ -194,3 +216,22 @@ async def ensure_fresh_prices(db: AsyncSession) -> None:
     )
     await db.execute(stmt)
     await db.commit()
+
+
+async def get_prices_for_crop(db: AsyncSession, crop: OilseedCrop) -> list[CommodityPrice]:
+    """Ensures prices are fresh, then returns cached rows for the Agmarknet
+    commodity matching this crop. Returns [] (not an error) both when the
+    crop isn't tracked by Agmarknet at all (e.g. castor, linseed) and when
+    it's tracked but we simply have no rows yet."""
+    await ensure_fresh_prices(db)
+
+    commodity_name = OILSEED_CROP_TO_COMMODITY_NAME.get(crop)
+    if commodity_name is None:
+        return []
+
+    result = await db.execute(
+        select(CommodityPrice)
+        .where(CommodityPrice.commodity_name == commodity_name)
+        .order_by(CommodityPrice.reported_date.desc())
+    )
+    return list(result.scalars().all())
