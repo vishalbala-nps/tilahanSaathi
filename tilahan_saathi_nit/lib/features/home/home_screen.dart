@@ -12,6 +12,7 @@ import 'package:tilahan_saathi/providers/calendar_provider.dart';
 import 'package:tilahan_saathi/providers/farm_profile_provider.dart';
 import 'package:tilahan_saathi/providers/lands_provider.dart';
 import 'package:tilahan_saathi/providers/oilseeds_provider.dart';
+import 'package:tilahan_saathi/providers/price_provider.dart';
 import 'package:tilahan_saathi/providers/selected_land_provider.dart';
 import 'package:tilahan_saathi/router/app_router.dart';
 
@@ -189,6 +190,7 @@ class _OilseedCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final crop = oilseed.crop;
     final calendarAsync = ref.watch(calendarProvider((landId: landId, oilseedId: oilseed.id)));
+    final priceAsync = ref.watch(oilseedLatestPriceProvider((landId: landId, oilseedId: oilseed.id)));
 
     return AppCard(
       onTap: () => context.push(
@@ -225,6 +227,18 @@ class _OilseedCard extends ConsumerWidget {
                       ),
                       style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
                     ),
+                    priceAsync.maybeWhen(
+                      data: (price) => price == null
+                          ? const SizedBox.shrink()
+                          : Text(
+                              '₹${price.pricePerQuintal.toStringAsFixed(0)}/quintal · ${_formatShortDate(price.reportedDate)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                      orElse: () => const SizedBox.shrink(),
+                    ),
                   ],
                 ),
               ),
@@ -244,6 +258,8 @@ class _OilseedCard extends ConsumerWidget {
   }
 
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
+
+  String _formatShortDate(DateTime date) => '${date.day}/${date.month}';
 }
 
 class _ProgressBar extends StatelessWidget {

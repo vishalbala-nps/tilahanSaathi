@@ -3,6 +3,7 @@ import 'package:tilahan_saathi/core/network/api_client.dart';
 import 'package:tilahan_saathi/models/crop_recommendation.dart';
 import 'package:tilahan_saathi/models/enums.dart';
 import 'package:tilahan_saathi/models/oilseed.dart';
+import 'package:tilahan_saathi/models/price_entry.dart';
 
 final _dateFormat = DateFormat('yyyy-MM-dd');
 
@@ -38,5 +39,12 @@ class OilseedsRepository {
 
   Future<void> deleteOilseed(int landId, int oilseedId) async {
     await dio.delete<void>('/lands/$landId/oilseeds/$oilseedId');
+  }
+
+  Future<List<PriceEntry>> getOilseedPrices(int landId, int oilseedId) async {
+    final response = await dio.get<List<dynamic>>('/lands/$landId/oilseeds/$oilseedId/price');
+    return (response.data ?? [])
+        .map((e) => PriceEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }

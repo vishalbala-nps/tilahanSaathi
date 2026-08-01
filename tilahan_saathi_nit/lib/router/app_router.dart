@@ -35,6 +35,7 @@ abstract final class AppRoutes {
   static const oilseedCalendar = '/oilseed-calendar';
   static const home = '/home';
   static const governmentSchemes = '/schemes';
+  static const priceComparison = '/prices';
   static const profile = '/profile';
 }
 
@@ -127,6 +128,14 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: AppRoutes.governmentSchemes,
+                builder: (context, state) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.priceComparison,
                 builder: (context, state) => const SizedBox.shrink(),
               ),
             ],

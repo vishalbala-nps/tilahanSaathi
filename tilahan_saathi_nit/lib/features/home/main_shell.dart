@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:tilahan_saathi/core/theme/app_colors.dart';
 import 'package:tilahan_saathi/core/widgets/app_card.dart';
 import 'package:tilahan_saathi/features/home/home_screen.dart';
+import 'package:tilahan_saathi/features/prices/price_comparison_screen.dart';
 import 'package:tilahan_saathi/features/profile/profile_screen.dart';
 import 'package:tilahan_saathi/features/schemes/government_schemes_screen.dart';
 import 'package:tilahan_saathi/router/app_router.dart';
@@ -15,6 +16,7 @@ class MainShell extends StatelessWidget {
   static const _tabs = [
     (AppRoutes.home, Icons.home_outlined, Icons.home_rounded, 'Home'),
     (AppRoutes.governmentSchemes, Icons.account_balance_outlined, Icons.account_balance_rounded, 'Schemes'),
+    (AppRoutes.priceComparison, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'Prices'),
     (AppRoutes.profile, Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
   ];
 
@@ -26,6 +28,7 @@ class MainShell extends StatelessWidget {
         children: const [
           HomeScreen(),
           GovernmentSchemesScreen(),
+          PriceComparisonScreen(),
           ProfileScreen(),
         ],
       ),
