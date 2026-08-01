@@ -1,5 +1,7 @@
 # Tilahan Saathi
 
+Demo Video Link: https://drive.google.com/file/d/1u-z-YwrmT9DA24Vc_Mg_loIC-5mPhHNY/view
+
 **Tilahan Saathi** ("Oilseed Companion") is an AI-powered decision-support app for Indian oilseed farmers. It recommends crops for a farmer's land (via a trained ML model + LLM-generated "Tilahaan Score" insights), tracks land and oilseed calendars, compares market prices, and surfaces relevant government schemes.
 
 The project is a monorepo with two parts:
